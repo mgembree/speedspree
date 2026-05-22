@@ -1,4 +1,5 @@
 {
+    "version": 1,
     "name": "InputSystem_Actions",
     "maps": [
         {
@@ -201,7 +202,51 @@
                 {
                     "name": "",
                     "id": "1635d3fe-58b6-4ba9-a4e2-f4b964f6b5c8",
-                    "path": "<XRController>/{Primary2DAxis}",
+                    "path": "<XRController>/{Primary2DAxis},
+                {
+                    "name": "Q",
+                    "type": "Button",
+                    "id": "f2fbe347-01cf-47d9-87b9-f5ad1d62574e",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "singletonActionBindings": [],
+                    "bindings": [
+                        {
+                            "name": "",
+                            "id": "90b3a8d7-50bf-4f06-b617-4a2b6636f796",
+                            "path": "<Keyboard>/q",
+                            "interactions": "",
+                            "processors": "",
+                            "groups": "Keyboard&Mouse",
+                            "action": "Q",
+                            "isComposite": false,
+                            "isPartOfComposite": false
+                        }
+                    ]
+                },
+                {
+                    "name": "E",
+                    "type": "Button",
+                    "id": "2ab9793b-37b7-4f14-96fb-8cd759ad38d8",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "singletonActionBindings": [],
+                    "bindings": [
+                        {
+                            "name": "",
+                            "id": "f80f3393-9a96-47a0-bfae-753ee3a98fdb",
+                            "path": "<Keyboard>/e",
+                            "interactions": "",
+                            "processors": "",
+                            "groups": "Keyboard&Mouse",
+                            "action": "E",
+                            "isComposite": false,
+                            "isPartOfComposite": false
+                        }
+                    ]
+                }",
                     "interactions": "",
                     "processors": "",
                     "groups": "XR",
