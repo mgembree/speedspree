@@ -1550,7 +1550,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1694372118}
   serializedVersion: 5
-  m_Mass: 1.5
+  m_Mass: 1
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -1680,7 +1680,7 @@ MonoBehaviour:
   walkSpeed: 7
   sprintSpeed: 14
   acceleration: 25
-  deceleration: 40
+  deceleration: 20
   turnResponsiveness: 0.45
   airControlMultiplier: 0.55
   noInputBrakingMultiplier: 0.65
@@ -1710,11 +1710,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPhysics
   groundFriction: 8
-  airFriction: 4
+  airFriction: 1.5
   maxHorizontalSpeed: 20
-  massMultiplier: 1.2
+  massMultiplier: 1
   gravityScale: 2.5
-  maxFallSpeed: 60
+  maxFallSpeed: 40
 --- !u!114 &1694372126
 MonoBehaviour:
   m_ObjectHideFlags: 0

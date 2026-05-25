@@ -11,7 +11,7 @@ using UnityEngine.InputSystem;
 public class DashAbility : MonoBehaviour
 {
     [Header("Dash Feel")]
-    [SerializeField] float dashSpeed = 28f;
+    [SerializeField] float dashSpeed = 45f;
     [SerializeField] float dashDuration = 0.18f;
     [SerializeField] float groundCooldown = 0.4f;
 
