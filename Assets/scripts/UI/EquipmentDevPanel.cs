@@ -22,8 +22,9 @@ public class EquipmentDevPanel : MonoBehaviour
     static readonly System.Type[] AvailableEquipment = new System.Type[]
     {
         typeof(DashAbility),
-        // Add new equipment types here as they're created
-        // typeof(GrappleAbility),
+        typeof(GrappleAbility),
+        typeof(WallRunAbility),
+        typeof(BallAndChainAbility),
         // typeof(JetpackAbility),
     };
 
