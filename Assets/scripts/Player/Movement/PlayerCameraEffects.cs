@@ -25,6 +25,16 @@ public class PlayerCameraEffects : MonoBehaviour
     [SerializeField] float landBobAmount = 0.08f;
     [SerializeField] float landBobSpeed = 14f;
 
+    [Header("Jump Kick (Arms)")]
+    [Tooltip("How far up the ArmsRig shifts on jump.")]
+    [SerializeField] float jumpKickAmount = 0.12f;
+    [Tooltip("How quickly the kick decays back to rest.")]
+    [SerializeField] float jumpKickDecaySpeed = 5f;
+
+    [Header("Wall Run Tilt")]
+    [SerializeField] float wallRunTiltAngle = 7f;
+    [SerializeField] float wallRunTiltSpeed = 10f;
+
     // References
     PlayerMovementController movement;
     
@@ -32,6 +42,12 @@ public class PlayerCameraEffects : MonoBehaviour
     GrappleAbility grapple;
 ExplosiveBootsAbility boots;
 DashAbility dash;
+WallRunAbility wallRun;
+
+    // Arms rig (jump kick)
+    Transform armsRig;
+    Vector3   armsBaseLocalPos;
+    float     armsJumpOffset;
 
     // Slide state
     bool sliding;
@@ -55,11 +71,20 @@ DashAbility dash;
         dash = GetComponent<DashAbility>();
         boots   = GetComponent<ExplosiveBootsAbility>();
         grapple = GetComponent<GrappleAbility>();
+        wallRun = GetComponent<WallRunAbility>();
 
         if (cameraTarget == null)
             cameraTarget = transform.Find("CameraTarget");
         if (playerLook == null)
             playerLook = GetComponent<PlayerLook>();
+
+        // Capture ArmsRig base position for jump kick offset
+        var armsRigComp = GetComponentInChildren<ArmsRig>();
+        if (armsRigComp != null)
+        {
+            armsRig = armsRigComp.transform;
+            armsBaseLocalPos = armsRig.localPosition;
+        }
     }
 
 void Start()
@@ -77,6 +102,7 @@ void Start()
 
         movement.onSlideStart += OnSlideStart;
         movement.onSlideEnd   += OnSlideEnd;
+        movement.onJump       += OnJump;
 
         if (dash != null)
         {
@@ -89,6 +115,12 @@ void Start()
 
         if (grapple != null)
             grapple.onGrappleAttach += OnGrappleAttach;
+
+        if (wallRun != null)
+        {
+            wallRun.onWallRunStart += OnWallRunStart;
+            wallRun.onWallRunEnd   += OnWallRunEnd;
+        }
     }
 
 void OnDestroy()
@@ -97,6 +129,7 @@ void OnDestroy()
         {
             movement.onSlideStart -= OnSlideStart;
             movement.onSlideEnd   -= OnSlideEnd;
+            movement.onJump       -= OnJump;
         }
         if (dash != null)
         {
@@ -107,6 +140,11 @@ void OnDestroy()
             boots.onBlast -= OnBootsBlast;
         if (grapple != null)
             grapple.onGrappleAttach -= OnGrappleAttach;
+        if (wallRun != null)
+        {
+            wallRun.onWallRunStart -= OnWallRunStart;
+            wallRun.onWallRunEnd   -= OnWallRunEnd;
+        }
     }
 
     void Update()
@@ -125,6 +163,13 @@ void OnDestroy()
 
         // Land bob decay
         landBobOffset = Mathf.SmoothDamp(landBobOffset, 0f, ref landBobVelocity, 1f / landBobSpeed);
+
+        // Arms jump kick decay
+        if (armsRig != null)
+        {
+            armsJumpOffset = Mathf.Lerp(armsJumpOffset, 0f, jumpKickDecaySpeed * Time.deltaTime);
+            armsRig.localPosition = armsBaseLocalPos + Vector3.up * armsJumpOffset;
+        }
 
         // FOV burst
         if (Camera.main != null)
@@ -145,7 +190,7 @@ void OnDestroy()
     void LateUpdate()
     {
         if (playerLook == null) return;
-        float lerpSpeed = sliding ? slideDownSpeed : slideUpSpeed;
+        float lerpSpeed = sliding ? slideDownSpeed : (wallRun != null && wallRun.IsWallRunning ? wallRunTiltSpeed : slideUpSpeed);
         _currentRoll = Mathf.LerpAngle(_currentRoll, targetRoll, lerpSpeed * Time.deltaTime);
         playerLook.SetRollOffset(_currentRoll);
     }
@@ -204,5 +249,27 @@ void OnDashEnd()
     {
         landBobOffset = -landBobAmount * Mathf.Clamp01(intensity);
         landBobVelocity = 0f;
+    }
+
+    // ── Jump Kick ──────────────────────────────────────────────────────────
+
+    void OnJump()
+    {
+        armsJumpOffset = jumpKickAmount;
+    }
+
+    // ── Wall Run ───────────────────────────────────────────────────────────
+
+    void OnWallRunStart(Vector3 wallNormal)
+    {
+        // Tilt camera toward the wall: negative dot with camera right = wall on right = lean right
+        Camera cam = Camera.main;
+        float side = cam != null ? Vector3.Dot(wallNormal, cam.transform.right) : 0f;
+        targetRoll = -wallRunTiltAngle * Mathf.Sign(side);
+    }
+
+    void OnWallRunEnd()
+    {
+        targetRoll = 0f;
     }
 }

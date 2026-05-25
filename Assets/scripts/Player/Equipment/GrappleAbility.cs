@@ -3,8 +3,8 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// Grapple — fires a rope to an anchor point and lets the player swing.
-/// Press Q/E to attach, press again (or release) to detach.
-/// Press Jump while attached to climb up (shortens rope + pulls player toward anchor).
+/// Press Q/E to attach, press again to detach.
+/// While attached, rope remains fixed length and only constrains swing motion.
 /// </summary>
 [RequireComponent(typeof(PlayerPhysics))]
 [RequireComponent(typeof(PlayerMovementController))]
@@ -16,13 +16,17 @@ public class GrappleAbility : MonoBehaviour
 
     [Header("Swing")]
     [SerializeField] float swingSpring    = 80f;
-    [SerializeField] float swingDamper    = 8f;
+    [SerializeField] float swingDamper    = 0.5f;
     [SerializeField] float swingMassScale = 4.5f;
-    [SerializeField] float ropeLengthBias = 0.85f;
+    [SerializeField] float ropeLengthBias = 1f;
 
-    [Header("Climbing")]
-    [SerializeField] float climbStep      = 1.5f;
-    [SerializeField] float climbPullForce = 8f;
+    [Header("Momentum")]
+    [Tooltip("Initial impulse toward anchor when grapple fires.")]
+    [SerializeField] float pullImpulse = 10f;
+    [Tooltip("Horizontal speed cap while grappling (higher than default to let swings build speed).")]
+    [SerializeField] float grappleSpeedCap = 35f;
+    [Tooltip("Seconds after release to keep the raised speed cap before clamping back down.")]
+    [SerializeField] float postDetachSpeedWindow = 0.8f;
 
     [Header("Cooldown")]
     [SerializeField] float cooldown = 0.4f;
@@ -65,11 +69,6 @@ public class GrappleAbility : MonoBehaviour
         bool keyDown = equipmentSlot == 0
             ? Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame
             : Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame;
-        bool keyUp = equipmentSlot == 0
-            ? Keyboard.current != null && Keyboard.current.qKey.wasReleasedThisFrame
-            : Keyboard.current != null && Keyboard.current.eKey.wasReleasedThisFrame;
-
-        bool jumpDown = Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame;
 
         switch (state)
         {
@@ -79,10 +78,8 @@ public class GrappleAbility : MonoBehaviour
                 break;
 
             case GrappleState.Attached:
-                if (keyDown || keyUp)
+                if (keyDown)
                     Detach();
-                else if (jumpDown)
-                    ClimbUp();
                 break;
         }
     }
@@ -113,26 +110,23 @@ public class GrappleAbility : MonoBehaviour
         swingJoint.connectedAnchor = anchorPoint;
 
         float dist = Vector3.Distance(transform.position, anchorPoint);
-        swingJoint.maxDistance = dist * ropeLengthBias;
-        swingJoint.minDistance = 0.5f;
+        float ropeLength = dist * Mathf.Max(1f, ropeLengthBias);
+        swingJoint.maxDistance = ropeLength;
+        swingJoint.minDistance = 0f;
         swingJoint.spring      = swingSpring;
         swingJoint.damper      = swingDamper;
+        swingJoint.tolerance   = 0.025f;
         swingJoint.massScale   = swingMassScale;
+        swingJoint.enableCollision = false;
+
+        // Pull player toward anchor to kickstart the swing
+        Vector3 pullDir = (anchorPoint - transform.position).normalized;
+        physics.AddImpulse(pullDir * pullImpulse);
+
+        physics.SetMaxHorizontalSpeedOverride(grappleSpeedCap);
 
         onGrappleAttach?.Invoke(anchorPoint);
-        Debug.Log($"[Grapple] Spring attached | ropeLen={swingJoint.maxDistance:F1}");
-    }
-
-    void ClimbUp()
-    {
-        if (swingJoint == null) return;
-
-        swingJoint.maxDistance = Mathf.Max(swingJoint.minDistance, swingJoint.maxDistance - climbStep);
-
-        Vector3 dir = (anchorPoint - transform.position).normalized;
-        physics.AddImpulse(dir * climbPullForce);
-
-        Debug.Log($"[Grapple] Climb | ropeLen={swingJoint.maxDistance:F1}");
+        Debug.Log($"[Grapple] Rope attached | ropeLen={ropeLength:F1}");
     }
 
     void Detach()
@@ -145,8 +139,20 @@ public class GrappleAbility : MonoBehaviour
 
         state         = GrappleState.Idle;
         cooldownTimer = cooldown;
+
+        // Keep speed cap briefly so the player doesn't lose swing momentum on release
+        float carrySpeed = Mathf.Max(grappleSpeedCap, physics.HorizontalSpeed);
+        physics.SetMaxHorizontalSpeedOverride(carrySpeed);
+        StartCoroutine(ClearSpeedOverrideAfterDelay(postDetachSpeedWindow));
+
         onGrappleDetach?.Invoke();
         Debug.Log("[Grapple] Detached");
+    }
+
+    System.Collections.IEnumerator ClearSpeedOverrideAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        physics.ClearMaxHorizontalSpeedOverride();
     }
 
     public bool    IsActive           => state != GrappleState.Idle;

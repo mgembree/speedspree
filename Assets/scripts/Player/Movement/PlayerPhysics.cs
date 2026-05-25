@@ -12,15 +12,23 @@ public class PlayerPhysics : MonoBehaviour
     [SerializeField] float airFriction = 1.5f;
     [SerializeField] float maxHorizontalSpeed = 20f;
 
+    [Header("Mass")]
+    [Tooltip("Scales Rigidbody mass and all impulse responsiveness.")]
+    [SerializeField, Min(0.1f)] float massMultiplier = 1f;
+
     [Header("Gravity")]
     [SerializeField] float gravityScale = 2.5f;
     [SerializeField] float maxFallSpeed = 40f;
 
     Rigidbody rb;
+    float baseMass;
 
     // Accumulated this-frame forces from abilities
     Vector3 pendingImpulse;
     Vector3 pendingForce;
+
+    // Per-ability speed cap override; -1 = use serialized default
+    float maxSpeedOverride = -1f;
 
     public Rigidbody Rigidbody => rb;
     public Vector3 Velocity => rb.linearVelocity;
@@ -29,15 +37,18 @@ public class PlayerPhysics : MonoBehaviour
         get => gravityScale;
         set => gravityScale = value;
     }
+    public float MassMultiplier => massMultiplier;
     public float HorizontalSpeed => new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z).magnitude;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        baseMass = Mathf.Max(0.01f, rb.mass);
         rb.useGravity = false;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         rb.constraints = RigidbodyConstraints.FreezeRotation;
+        rb.mass = baseMass * Mathf.Max(0.1f, massMultiplier);
     }
 
     void FixedUpdate()
@@ -94,7 +105,7 @@ public class PlayerPhysics : MonoBehaviour
     {
         if (pendingImpulse != Vector3.zero)
         {
-            rb.AddForce(pendingImpulse, ForceMode.VelocityChange);
+            rb.AddForce(pendingImpulse, ForceMode.Impulse);
             pendingImpulse = Vector3.zero;
         }
         if (pendingForce != Vector3.zero)
@@ -106,13 +117,17 @@ public class PlayerPhysics : MonoBehaviour
 
     void ClampHorizontalSpeed()
     {
+        float cap = maxSpeedOverride > 0f ? maxSpeedOverride : maxHorizontalSpeed;
         Vector3 horizontal = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-        if (horizontal.magnitude > maxHorizontalSpeed)
+        if (horizontal.magnitude > cap)
         {
-            horizontal = horizontal.normalized * maxHorizontalSpeed;
+            horizontal = horizontal.normalized * cap;
             rb.linearVelocity = new Vector3(horizontal.x, rb.linearVelocity.y, horizontal.z);
         }
     }
+
+    public void SetMaxHorizontalSpeedOverride(float speed) => maxSpeedOverride = speed;
+    public void ClearMaxHorizontalSpeedOverride() => maxSpeedOverride = -1f;
 
     void ClampFallSpeed()
     {

@@ -17,6 +17,14 @@ public class PlayerMovementController : MonoBehaviour
     [SerializeField] float acceleration = 25f;
     [SerializeField] float deceleration = 20f;
 
+    [Header("Weight Feel")]
+    [Tooltip("Lower values make direction changes feel heavier and less twitchy.")]
+    [SerializeField, Range(0.1f, 1f)] float turnResponsiveness = 0.45f;
+    [Tooltip("How much movement acceleration is allowed while airborne.")]
+    [SerializeField, Range(0f, 1f)] float airControlMultiplier = 0.55f;
+    [Tooltip("How strongly we brake when there is no movement input.")]
+    [SerializeField, Range(0.1f, 1.2f)] float noInputBrakingMultiplier = 0.65f;
+
     [Header("Auto-Sprint")]
     [Tooltip("Seconds of continuous movement before auto-sprint kicks in.")]
     [SerializeField] float autoSprintDelay = 0.4f;
@@ -63,6 +71,7 @@ public class PlayerMovementController : MonoBehaviour
     // Slide events — subscribed to by PlayerCameraEffects
     public System.Action onSlideStart;
     public System.Action onSlideEnd;
+    public System.Action onJump;
 
     // ── Unity ──────────────────────────────────────────────────────────────
 
@@ -169,6 +178,25 @@ void OnLanded()
         Vector3 targetVelocity = wishDir * targetSpeed;
 
         float accel = wishDir.magnitude < 0.1f ? deceleration : acceleration;
+
+        if (wishDir.magnitude < 0.1f)
+        {
+            accel *= noInputBrakingMultiplier;
+        }
+        else if (currentHorizontal.sqrMagnitude > 0.01f)
+        {
+            // Reduce accel while turning, especially when reversing direction, to keep momentum weighty.
+            float alignment = Mathf.InverseLerp(-1f, 1f, Vector3.Dot(currentHorizontal.normalized, wishDir));
+            float turnFactor = Mathf.Lerp(turnResponsiveness, 1f, alignment);
+            accel *= turnFactor;
+        }
+
+        if (!isGrounded)
+            accel *= airControlMultiplier;
+
+        // Heavier mass should reduce acceleration and braking responsiveness.
+        accel /= Mathf.Max(0.1f, physics.MassMultiplier);
+
         Vector3 newHorizontal = Vector3.MoveTowards(currentHorizontal, targetVelocity, accel * Time.fixedDeltaTime);
 
         physics.SetHorizontalVelocity(newHorizontal);
@@ -259,6 +287,7 @@ void OnLanded()
         if (physics.Velocity.y < 0f)
             physics.SetVerticalVelocity(0f);
 
+        onJump?.Invoke();
         physics.AddImpulse(Vector3.up * jumpForce);
     }
 
