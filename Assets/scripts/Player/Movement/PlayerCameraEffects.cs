@@ -43,6 +43,7 @@ public class PlayerCameraEffects : MonoBehaviour
 ExplosiveBootsAbility boots;
 DashAbility dash;
 WallRunAbility wallRun;
+BallAndChainAbility ballChain;
 
     // Arms rig (jump kick)
     Transform armsRig;
@@ -72,6 +73,7 @@ WallRunAbility wallRun;
         boots   = GetComponent<ExplosiveBootsAbility>();
         grapple = GetComponent<GrappleAbility>();
         wallRun = GetComponent<WallRunAbility>();
+        ballChain = GetComponent<BallAndChainAbility>();
 
         if (cameraTarget == null)
             cameraTarget = transform.Find("CameraTarget");
@@ -121,6 +123,13 @@ void Start()
             wallRun.onWallRunStart += OnWallRunStart;
             wallRun.onWallRunEnd   += OnWallRunEnd;
         }
+
+        if (ballChain != null)
+        {
+            ballChain.onThrow  += OnBallThrow;
+            ballChain.onYank   += OnBallYank;
+            ballChain.onRecall += OnBallRecall;
+        }
     }
 
 void OnDestroy()
@@ -144,6 +153,12 @@ void OnDestroy()
         {
             wallRun.onWallRunStart -= OnWallRunStart;
             wallRun.onWallRunEnd   -= OnWallRunEnd;
+        }
+        if (ballChain != null)
+        {
+            ballChain.onThrow  -= OnBallThrow;
+            ballChain.onYank   -= OnBallYank;
+            ballChain.onRecall -= OnBallRecall;
         }
     }
 
@@ -272,4 +287,21 @@ void OnDashEnd()
     {
         targetRoll = 0f;
     }
+
+    // ── Ball and Chain ─────────────────────────────────────────────────────
+
+    void OnBallThrow()
+    {
+        // Small FOV punch when the ball is thrown
+        targetFov = baseFov + dashFovBoost * 0.5f;
+        Invoke(nameof(ResetFov), 0.12f);
+    }
+
+    void OnBallYank()
+    {
+        // Camera dips down like a land bob when the chain suddenly yanks the player
+        TriggerLandBob(0.7f);
+    }
+
+    void OnBallRecall() { }
 }
