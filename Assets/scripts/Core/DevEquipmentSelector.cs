@@ -14,6 +14,8 @@ public class DevEquipmentSelector : MonoBehaviour
         typeof(JetpackAbility),
         typeof(ExplosiveBootsAbility),
         typeof(GrappleAbility),
+        typeof(WallRunAbility),
+        typeof(BallAndChainAbility),
     };
 
     bool showPanel = false;
@@ -99,6 +101,11 @@ void Update()
                     if (type == typeof(GrappleAbility))
                     {
                         var vis = player.GetComponent<GrappleVisuals>();
+                        if (vis != null) Destroy(vis);
+                    }
+                    if (type == typeof(BallAndChainAbility))
+                    {
+                        var vis = player.GetComponent<BallAndChainVisuals>();
                         if (vis != null) Destroy(vis);
                     }
                     Destroy(comp);
