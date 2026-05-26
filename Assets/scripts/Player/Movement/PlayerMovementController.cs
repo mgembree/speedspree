@@ -71,6 +71,7 @@ public class PlayerMovementController : MonoBehaviour
     // Slide events — subscribed to by PlayerCameraEffects
     public System.Action onSlideStart;
     public System.Action onSlideEnd;
+    public System.Action onJump;
 
     // ── Unity ──────────────────────────────────────────────────────────────
 
@@ -287,6 +288,7 @@ void OnLanded()
             physics.SetVerticalVelocity(0f);
 
         physics.AddImpulse(Vector3.up * jumpForce);
+        onJump?.Invoke();
     }
 
     // ── Slide ──────────────────────────────────────────────────────────────

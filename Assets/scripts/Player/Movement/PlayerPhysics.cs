@@ -27,6 +27,9 @@ public class PlayerPhysics : MonoBehaviour
     Vector3 pendingImpulse;
     Vector3 pendingForce;
 
+    // Per-ability speed cap override; -1 = use serialized default
+    float maxSpeedOverride = -1f;
+
     public Rigidbody Rigidbody => rb;
     public Vector3 Velocity => rb.linearVelocity;
     public float GravityScale
@@ -114,13 +117,17 @@ public class PlayerPhysics : MonoBehaviour
 
     void ClampHorizontalSpeed()
     {
+        float cap = maxSpeedOverride > 0f ? maxSpeedOverride : maxHorizontalSpeed;
         Vector3 horizontal = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-        if (horizontal.magnitude > maxHorizontalSpeed)
+        if (horizontal.magnitude > cap)
         {
-            horizontal = horizontal.normalized * maxHorizontalSpeed;
+            horizontal = horizontal.normalized * cap;
             rb.linearVelocity = new Vector3(horizontal.x, rb.linearVelocity.y, horizontal.z);
         }
     }
+
+    public void SetMaxHorizontalSpeedOverride(float speed) => maxSpeedOverride = speed;
+    public void ClearMaxHorizontalSpeedOverride() => maxSpeedOverride = -1f;
 
     void ClampFallSpeed()
     {
