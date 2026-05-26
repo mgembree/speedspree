@@ -18,13 +18,17 @@ public class EquipmentDevPanel : MonoBehaviour
     [SerializeField] Transform buttonContainer;
     [SerializeField] GameObject buttonPrefab;
 
-    // All equipment types available to equip
+    // All equipment types available to equip.
+    // To register a new ability, add typeof(YourAbility) to this array.
+    // See Assets/Docs/AddingEquipment.md for the full guide.
     static readonly System.Type[] AvailableEquipment = new System.Type[]
     {
         typeof(DashAbility),
-        // Add new equipment types here as they're created
-        // typeof(GrappleAbility),
-        // typeof(JetpackAbility),
+        typeof(GrappleAbility),
+        typeof(JetpackAbility),
+        typeof(WallRunAbility),
+        typeof(ExplosiveBootsAbility),
+        typeof(BallAndChainAbility),
     };
 
     bool isOpen;
