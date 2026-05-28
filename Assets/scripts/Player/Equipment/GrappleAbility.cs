@@ -16,9 +16,16 @@ public class GrappleAbility : MonoBehaviour
 
     [Header("Swing")]
     [SerializeField] float swingSpring    = 80f;
-    [SerializeField] float swingDamper    = 8f;
+    [SerializeField] float swingDamper    = 2f;
     [SerializeField] float swingMassScale = 4.5f;
-    [SerializeField] float ropeLengthBias = 1f;
+    [Tooltip("Continuous force toward the anchor while swinging — boosts swing speed like Spider-Man.")]
+    [SerializeField] float swingPullForce = 30f;
+
+    [Header("Momentum")]
+    [Tooltip("Speed cap while grappling — lets swing momentum exceed normal movement cap.")]
+    [SerializeField] float swingSpeedCap  = 40f;
+    [Tooltip("Velocity multiplier applied on detach. 1 = no boost, 1.4 = 40% exit speed bonus.")]
+    [SerializeField] float releaseBoost   = 1.35f;
 
     [Header("Cooldown")]
     [SerializeField] float cooldown = 0.4f;
@@ -76,6 +83,22 @@ public class GrappleAbility : MonoBehaviour
         }
     }
 
+    void FixedUpdate()
+    {
+        if (state != GrappleState.Attached || swingJoint == null) return;
+
+        Vector3 toAnchor = anchorPoint - transform.position;
+        float   dist     = toAnchor.magnitude;
+
+        // Rope shortens as player swings inward — never lengthens
+        if (dist < swingJoint.maxDistance)
+            swingJoint.maxDistance = dist;
+
+        // Only assist when rope is taut — pulling toward anchor while slack fights the arc
+        if (dist >= swingJoint.maxDistance * 0.95f)
+            physics.AddForce(toAnchor.normalized * swingPullForce);
+    }
+
     void TryFire()
     {
         Camera cam = Camera.main;
@@ -102,8 +125,7 @@ public class GrappleAbility : MonoBehaviour
         swingJoint.connectedAnchor = anchorPoint;
 
         float dist = Vector3.Distance(transform.position, anchorPoint);
-        float ropeLength = dist * Mathf.Max(1f, ropeLengthBias);
-        swingJoint.maxDistance = ropeLength;
+        swingJoint.maxDistance = dist;
         swingJoint.minDistance = 0f;
         swingJoint.spring      = swingSpring;
         swingJoint.damper      = swingDamper;
@@ -111,8 +133,10 @@ public class GrappleAbility : MonoBehaviour
         swingJoint.massScale   = swingMassScale;
         swingJoint.enableCollision = false;
 
+        physics.SetMaxHorizontalSpeedOverride(swingSpeedCap);
+
         onGrappleAttach?.Invoke(anchorPoint);
-        Debug.Log($"[Grapple] Rope attached | ropeLen={ropeLength:F1}");
+        Debug.Log($"[Grapple] Rope attached | ropeLen={dist:F1}");
     }
 
     void Detach()
@@ -122,6 +146,12 @@ public class GrappleAbility : MonoBehaviour
             Destroy(swingJoint);
             swingJoint = null;
         }
+
+        // Slingshot boost — rewards releasing at the right point in the arc
+        if (releaseBoost > 1f)
+            physics.AddImpulse(physics.Velocity * (releaseBoost - 1f));
+
+        physics.ClearMaxHorizontalSpeedOverride();
 
         state         = GrappleState.Idle;
         cooldownTimer = cooldown;

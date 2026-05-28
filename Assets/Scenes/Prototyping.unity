@@ -862,7 +862,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 9d4be41a1bffd4c23a37e05fa34360ab, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -903,7 +903,7 @@ Transform:
   m_GameObject: {fileID: 907307170}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 13.28904, y: -5.82, z: -5.01936}
+  m_LocalPosition: {x: 13.28904, y: -5.82, z: -5}
   m_LocalScale: {x: 100, y: 5, z: 100}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1535,6 +1535,7 @@ GameObject:
   - component: {fileID: 1694372126}
   - component: {fileID: 1694372127}
   - component: {fileID: 1694372128}
+  - component: {fileID: 1694372129}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -1772,6 +1773,28 @@ MonoBehaviour:
   groundCooldown: 0.4
   maxAirDashes: 1
   equipmentSlot: 0
+--- !u!114 &1694372129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1694372118}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0831a88e7bf660c40b68c505c84ef4d3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BallAndChainAbility
+  chainLength: 1
+  pullForce: 45
+  ballMass: 8
+  ballRadius: 0.28
+  throwForce: 32
+  bounciness: 0.63
+  ballAngularDrag: 3
+  chainSpeedCap: 42
+  cooldown: 0.6
+  equipmentSlot: 1
 --- !u!1 &1713803116
 GameObject:
   m_ObjectHideFlags: 0
