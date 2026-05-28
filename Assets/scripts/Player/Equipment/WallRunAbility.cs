@@ -2,7 +2,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// Wall Run — hold Q or E while airborne near a vertical wall to run along it.
+/// Wall Run — tap Q or E while airborne near a vertical wall to latch on.
+/// Ends on jump, backward input, or losing wall contact.
 /// Press Jump (Space) while wall running to launch off the wall.
 /// Bind equipmentSlot: 0 = Q, 1 = E.
 /// </summary>
@@ -17,8 +18,8 @@ public class WallRunAbility : MonoBehaviour
     [Header("Wall Run Feel")]
     [SerializeField] float maxDuration      = 1.8f;
     [SerializeField] float cooldownTime     = 0.6f;
-    [Tooltip("Gravity scale while wall running (near zero keeps player stuck to wall).")]
-    [SerializeField] float wallGravityScale = 0.08f;
+    [Tooltip("1 = zero gravity (float level), higher = gentle downward drift.")]
+    [SerializeField] float wallGravityScale = 1.1f;
     [Tooltip("Force applied toward the wall each FixedUpdate to keep the player hugging it.")]
     [SerializeField] float wallHugForce     = 20f;
     [Tooltip("Horizontal speed cap while wall running.")]
@@ -33,7 +34,7 @@ public class WallRunAbility : MonoBehaviour
     [SerializeField] int equipmentSlot = 1;
 
     // Events — subscribe for VFX, camera effects
-    public System.Action<Vector3> onWallRunStart;   // passes wall normal
+    public System.Action<Vector3> onWallRunStart;
     public System.Action          onWallRunEnd;
 
     PlayerPhysics            physics;
@@ -44,7 +45,6 @@ public class WallRunAbility : MonoBehaviour
     float   wallRunTimer;
     float   cooldownTimer;
     float   defaultGravityScale;
-    bool    keyHeld;
     bool    wallJumpUsed;
 
     void Awake()
@@ -63,11 +63,10 @@ public class WallRunAbility : MonoBehaviour
     {
         if (cooldownTimer > 0f) cooldownTimer -= Time.deltaTime;
 
-        keyHeld = equipmentSlot == 0
-            ? Keyboard.current != null && Keyboard.current.qKey.isPressed
-            : Keyboard.current != null && Keyboard.current.eKey.isPressed;
+        bool keyPressed = equipmentSlot == 0
+            ? Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame
+            : Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame;
 
-        // Landing resets cooldown and wall-jump flag
         if (movement.IsGrounded)
         {
             if (isWallRunning) EndWallRun();
@@ -80,21 +79,27 @@ public class WallRunAbility : MonoBehaviour
         {
             wallRunTimer -= Time.deltaTime;
 
-            if (wallRunTimer <= 0f || !keyHeld || !DetectWall(out Vector3 updatedNormal))
+            bool jumpPressed    = Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame;
+            bool movingBackward = movement.MoveInput.y < -0.1f;
+
+            if (jumpPressed)
+            {
+                if (!wallJumpUsed) DoWallJump();
+                else               EndWallRun();
+                return;
+            }
+
+            if (wallRunTimer <= 0f || movingBackward || !DetectWall(out Vector3 updatedNormal))
             {
                 EndWallRun();
                 return;
             }
 
             wallNormal = updatedNormal;
-
-            bool jumpPressed = Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame;
-            if (jumpPressed && !wallJumpUsed)
-                DoWallJump();
         }
         else
         {
-            if (keyHeld && cooldownTimer <= 0f && DetectWall(out Vector3 normal))
+            if (keyPressed && cooldownTimer <= 0f && DetectWall(out Vector3 normal))
                 StartWallRun(normal);
         }
     }
@@ -103,7 +108,6 @@ public class WallRunAbility : MonoBehaviour
     {
         if (!isWallRunning) return;
 
-        // Suppress gravity and hug the wall
         physics.GravityScale = wallGravityScale;
         physics.AddForce(-wallNormal * wallHugForce);
     }
@@ -115,7 +119,6 @@ public class WallRunAbility : MonoBehaviour
         normal = Vector3.zero;
         Vector3 origin = transform.position + Vector3.up * 0.5f;
 
-        // Check left, right, forward-left, forward-right relative to player body yaw
         Vector3[] dirs =
         {
             -transform.right,
@@ -131,7 +134,6 @@ public class WallRunAbility : MonoBehaviour
         {
             if (Physics.Raycast(origin, dir, out RaycastHit hit, wallCheckDistance, wallMask, QueryTriggerInteraction.Ignore))
             {
-                // Only count walls, not floors or ceilings
                 if (Mathf.Abs(hit.normal.y) < 0.35f && hit.distance < bestDist)
                 {
                     bestDist = hit.distance;
@@ -153,7 +155,6 @@ public class WallRunAbility : MonoBehaviour
         wallRunTimer  = maxDuration;
         wallJumpUsed  = false;
 
-        // Neutralise downward momentum so the run starts cleanly
         if (physics.Velocity.y < 0f) physics.SetVerticalVelocity(0f);
 
         physics.SetMaxHorizontalSpeedOverride(wallRunSpeedCap);
