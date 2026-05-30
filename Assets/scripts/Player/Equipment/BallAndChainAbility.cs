@@ -15,6 +15,8 @@ public class BallAndChainAbility : MonoBehaviour
     [SerializeField] float chainLength = 8f;
     [Tooltip("Continuous force applied to the player toward the ball when the chain is taut.")]
     [SerializeField] float pullForce   = 45f;
+    [Tooltip("Force multiplier when grounded to overcome ground friction.")]
+    [SerializeField] float groundedPullMultiplier = 3.5f;
 
     [Header("Ball")]
     [Tooltip("Mass of the ball relative to the player Rigidbody.")]
@@ -51,7 +53,7 @@ public class BallAndChainAbility : MonoBehaviour
     Rigidbody  ballRb;
     float      cooldownTimer;
 
-    bool chainTaut;
+    bool  chainTaut;
 
     void Awake()
     {
@@ -99,7 +101,12 @@ public class BallAndChainAbility : MonoBehaviour
         if (dist > chainLength)
         {
             // Chain is taut — drag player continuously toward the ball
-            physics.AddForce(towardBall.normalized * pullForce);
+            // Apply stronger force when grounded to overcome friction
+            float force = pullForce;
+            if (movement.IsGrounded)
+                force *= groundedPullMultiplier;
+
+            physics.AddForce(towardBall.normalized * force);
 
             if (!chainTaut)
             {

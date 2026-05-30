@@ -29,6 +29,8 @@ public class EquipmentDevPanel : MonoBehaviour
         typeof(WallRunAbility),
         typeof(ExplosiveBootsAbility),
         typeof(BallAndChainAbility),
+        typeof(DoubleJumpAbility),
+        typeof(TeleportAbility),
     };
 
     bool isOpen;

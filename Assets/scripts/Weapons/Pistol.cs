@@ -22,6 +22,7 @@ public class Pistol : WeaponBase
         Ray ray = new Ray(Cam.transform.position, Cam.transform.forward);
         if (Physics.Raycast(ray, out RaycastHit hit, range, hitMask, QueryTriggerInteraction.Ignore))
         {
+            HitSpark.Spawn(hit.point, hit.normal);
             hit.collider.GetComponent<IDamageable>()?.TakeDamage(damage, gameObject);
             Debug.Log($"[Pistol] Hit: {hit.collider.name} at {hit.distance:F1}m");
         }
