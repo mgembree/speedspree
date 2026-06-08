@@ -16,13 +16,18 @@ public class Sword : WeaponBase
     [SerializeField] float   swingOutDuration   = 0.12f;
     [SerializeField] float   swingBackDuration  = 0.22f;
 
-    float      nextSwingTime;
-    Coroutine  activeSwing;
-    Quaternion restRotation;
+    [Header("Lunge")]
+    [SerializeField] float lungeForce = 5f;
+
+    float         nextSwingTime;
+    Coroutine     activeSwing;
+    Quaternion    restRotation;
+    PlayerPhysics playerPhysics;
 
     void OnEnable()
     {
-        restRotation = transform.localRotation;
+        restRotation  = transform.localRotation;
+        playerPhysics = GetComponentInParent<PlayerPhysics>();
     }
 
     public override void PrimaryAttack()
@@ -46,6 +51,12 @@ public class Sword : WeaponBase
 
     IEnumerator SwingRoutine()
     {
+        if (playerPhysics != null)
+        {
+            Vector3 lungeDir = Vector3.ProjectOnPlane(Cam.transform.forward, Vector3.up).normalized;
+            playerPhysics.AddImpulse(lungeDir * lungeForce);
+        }
+
         Quaternion swungRotation = restRotation * Quaternion.Euler(swingOffset);
 
         // Swing out to apex

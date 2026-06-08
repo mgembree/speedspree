@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -10,9 +12,25 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(PlayerMovementController))]
 public class BallAndChainAbility : MonoBehaviour
 {
+    class BallPickupProxy : MonoBehaviour
+    {
+        BallAndChainAbility owner;
+
+        public void Init(BallAndChainAbility ability)
+        {
+            owner = ability;
+        }
+
+        void OnCollisionEnter(Collision collision)
+        {
+            if (owner == null) return;
+            owner.TryPickupFromCollision(collision.collider);
+        }
+    }
+
     [Header("Chain")]
     [Tooltip("Max rope length before pull engages.")]
-    [SerializeField] float chainLength = 8f;
+    [SerializeField] float chainLength = 2f;
     [Tooltip("Continuous force applied to the player toward the ball when the chain is taut.")]
     [SerializeField] float pullForce   = 45f;
     [Tooltip("Force multiplier when grounded to overcome ground friction.")]
@@ -24,9 +42,11 @@ public class BallAndChainAbility : MonoBehaviour
     [SerializeField] float ballRadius      = 0.28f;
     [SerializeField] float throwForce      = 32f;
     [Tooltip("Bounciness of the ball PhysicsMaterial (0 = no bounce, 1 = full bounce).")]
-    [SerializeField, Range(0f, 1f)] float bounciness = 0.55f;
+    [SerializeField, Range(0f, 1f)] float bounciness = 0.25f;
     [Tooltip("Angular drag on the ball so it settles after bouncing.")]
     [SerializeField] float ballAngularDrag = 3f;
+    [Tooltip("Delay before re-enabling ball collisions with the player so throw spawn doesn't instantly self-collide.")]
+    [SerializeField] float playerCollisionEnableDelay = 0.15f;
 
     [Header("Drag Speed")]
     [Tooltip("Horizontal speed cap raised while the chain is active so pull momentum isn't clipped.")]
@@ -52,6 +72,9 @@ public class BallAndChainAbility : MonoBehaviour
     GameObject ballObj;
     Rigidbody  ballRb;
     float      cooldownTimer;
+    Coroutine  reenableCollisionRoutine;
+    Collider   ballCollider;
+    readonly List<Collider> ignoredPlayerColliders = new();
 
     bool  chainTaut;
 
@@ -147,12 +170,23 @@ public class BallAndChainAbility : MonoBehaviour
         physMat.staticFriction  = 0.3f;
         physMat.bounceCombine   = PhysicsMaterialCombine.Maximum;
         physMat.frictionCombine = PhysicsMaterialCombine.Average;
-        ballObj.GetComponent<Collider>().material = physMat;
+        ballCollider = ballObj.GetComponent<Collider>();
+        ballCollider.material = physMat;
+
+        var proxy = ballObj.AddComponent<BallPickupProxy>();
+        proxy.Init(this);
 
         var playerColliders = GetComponentsInChildren<Collider>();
-        var ballCol = ballObj.GetComponent<Collider>();
+        ignoredPlayerColliders.Clear();
         foreach (var c in playerColliders)
-            Physics.IgnoreCollision(ballCol, c, true);
+        {
+            Physics.IgnoreCollision(ballCollider, c, true);
+            ignoredPlayerColliders.Add(c);
+        }
+
+        if (reenableCollisionRoutine != null)
+            StopCoroutine(reenableCollisionRoutine);
+        reenableCollisionRoutine = StartCoroutine(ReenablePlayerBallCollisionsAfterDelay());
 
         ballRb.linearVelocity = physics.Velocity;
         ballRb.AddForce(cam.transform.forward * throwForce, ForceMode.Impulse);
@@ -178,7 +212,24 @@ public class BallAndChainAbility : MonoBehaviour
 
     void CleanUp()
     {
+        if (reenableCollisionRoutine != null)
+        {
+            StopCoroutine(reenableCollisionRoutine);
+            reenableCollisionRoutine = null;
+        }
+
+        if (ballCollider != null)
+        {
+            foreach (var c in ignoredPlayerColliders)
+            {
+                if (c != null)
+                    Physics.IgnoreCollision(ballCollider, c, false);
+            }
+        }
+        ignoredPlayerColliders.Clear();
+
         if (ballObj != null) { Destroy(ballObj); ballObj = null; ballRb = null; }
+        ballCollider = null;
 
         physics.ClearMaxHorizontalSpeedOverride();
         state = State.Idle;
@@ -192,4 +243,30 @@ public class BallAndChainAbility : MonoBehaviour
     public GameObject BallObject         => ballObj;
     public Vector3    BallPosition       => ballObj != null ? ballObj.transform.position : transform.position;
     public float      CooldownNormalized => Mathf.Clamp01(cooldownTimer / cooldown);
+
+    IEnumerator ReenablePlayerBallCollisionsAfterDelay()
+    {
+        float delay = Mathf.Max(0f, playerCollisionEnableDelay);
+        if (delay > 0f)
+            yield return new WaitForSeconds(delay);
+
+        if (ballCollider == null)
+            yield break;
+
+        foreach (var c in ignoredPlayerColliders)
+        {
+            if (c != null)
+                Physics.IgnoreCollision(ballCollider, c, false);
+        }
+        ignoredPlayerColliders.Clear();
+        reenableCollisionRoutine = null;
+    }
+
+    void TryPickupFromCollision(Collider other)
+    {
+        if (state != State.Active || other == null) return;
+        if (other.transform.root != transform.root) return;
+
+        Recall();
+    }
 }

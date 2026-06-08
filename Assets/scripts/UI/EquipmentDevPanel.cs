@@ -31,6 +31,7 @@ public class EquipmentDevPanel : MonoBehaviour
         typeof(BallAndChainAbility),
         typeof(DoubleJumpAbility),
         typeof(TeleportAbility),
+        typeof(WeaponSwapAbility),
     };
 
     bool isOpen;

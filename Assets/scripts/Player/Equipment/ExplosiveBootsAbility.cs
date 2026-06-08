@@ -14,6 +14,12 @@ public class ExplosiveBootsAbility : MonoBehaviour
     [Header("Launch Force")]
     [SerializeField] float launchForce = 26f;
 
+    [Header("Direction Blending")]
+    [Tooltip("How much current velocity steers the blast on a floor bounce. 0 = pure up, 1 = fully along movement.")]
+    [SerializeField, Range(0f, 1f)] float floorMoveWeight = 0.4f;
+    [Tooltip("How much current velocity steers a wall blast. 0 = pure normal, 1 = fully along movement.")]
+    [SerializeField, Range(0f, 1f)] float wallMoveWeight  = 0.3f;
+
     [Header("Charges")]
     [SerializeField] int maxCharges = 2;
     [SerializeField] float chargeRechargeTime = 3f;
@@ -116,26 +122,27 @@ public class ExplosiveBootsAbility : MonoBehaviour
                 if (hit.distance < closestDist)
                 {
                     closestDist = hit.distance;
-                    bestNormal = hit.normal;
+                    bestNormal  = hit.normal;
                 }
             }
         }
 
+        // Prefer current horizontal velocity as the movement steer so the blast
+        // adds onto where the player is already going rather than overriding it.
+        // Fall back to camera-facing when the player is stationary.
+        Vector3 currentHoriz = new Vector3(physics.Velocity.x, 0f, physics.Velocity.z);
+        Vector3 moveDir = currentHoriz.magnitude > 0.5f
+            ? currentHoriz.normalized
+            : (Camera.main != null
+                ? Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up).normalized
+                : transform.forward);
+
         bool isFloor = bestNormal.y > 0.7f;
 
         if (isFloor)
-        {
-            // ~45°: blend camera-facing horizontal with up equally
-            Vector3 facing = transform.forward;
-            if (Camera.main != null)
-                facing = Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up).normalized;
-            return (facing + Vector3.up).normalized;
-        }
+            return (Vector3.up + moveDir * floorMoveWeight).normalized;
         else
-        {
-            // Wall/ceiling: pure perpendicular off the surface
-            return bestNormal.normalized;
-        }
+            return (bestNormal + moveDir * wallMoveWeight).normalized;
     }
 
     public int Charges => charges;

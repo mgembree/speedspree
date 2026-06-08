@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2bd0fadd775b06a4d80e2fefa0c1f169, type: 3}
+  m_Name: FactionThemeDefinition
+  m_EditorClassIdentifier: Assembly-CSharp::FactionThemeDefinition
+  faction: 0
+  displayName: 
+  styleSummary: 
+  primaryBuildingMaterial: {fileID: 2100000, guid: 157c47e0c183e304d98ecf181ace8326, type: 2}
+  borderBlendMaterial: {fileID: 0}
+  roadMaterial: {fileID: 2100000, guid: f7699e90a99545b4682bb1af8fc86a3f, type: 2}
+  arenaMaterial: {fileID: 0}
+  accentColor: {r: 1, g: 1, b: 1, a: 1}
+  coreBuildingPrefabs: []
+  borderBuildingPrefabs: []
+  propPrefabs: []
+  shopSignPrefabs: []
+  arenaPropPrefabs: []

@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6109aa34ccac410428ccadb6b8cc0bbe, type: 3}
+  m_Name: ZoneGenerationProfile
+  m_EditorClassIdentifier: Assembly-CSharp::ZoneGenerationProfile
+  zoneSize: {x: 200, y: 200}
+  hexOuterRadius: 70
+  lotsPerAxis: 8
+  borderBlendBand: 0.053
+  roadCoverage: 0.37
+  openSpaceCoverage: 0.08
+  lotFillRange: {x: 0.75, y: 0.92}
+  roadGridPeriod: 3
+  roadStaggerStrength: 0.577
+  buildingWidthRange: {x: 4.97, y: 24.5}
+  buildingDepthRange: {x: 7.38, y: 28.7}
+  buildingHeightRange: {x: 9.9, y: 74.7}
+  propSpawnChance: 0.25

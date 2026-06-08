@@ -14,16 +14,16 @@ public class PlayerMovementController : MonoBehaviour
     [Header("Walk / Run")]
     [SerializeField] float walkSpeed = 7f;
     [SerializeField] float sprintSpeed = 14f;
-    [SerializeField] float acceleration = 25f;
-    [SerializeField] float deceleration = 20f;
+    [SerializeField] float acceleration = 33f;
+    [SerializeField] float deceleration = 22f;
 
     [Header("Weight Feel")]
     [Tooltip("Lower values make direction changes feel heavier and less twitchy.")]
-    [SerializeField, Range(0.1f, 1f)] float turnResponsiveness = 0.45f;
+    [SerializeField, Range(0.1f, 1f)] float turnResponsiveness = 0.62f;
     [Tooltip("How much movement acceleration is allowed while airborne.")]
-    [SerializeField, Range(0f, 1f)] float airControlMultiplier = 0.55f;
+    [SerializeField, Range(0f, 1f)] float airControlMultiplier = 0.70f;
     [Tooltip("How strongly we brake when there is no movement input.")]
-    [SerializeField, Range(0.1f, 1.2f)] float noInputBrakingMultiplier = 0.65f;
+    [SerializeField, Range(0.1f, 1.2f)] float noInputBrakingMultiplier = 0.72f;
 
     [Header("Auto-Sprint")]
     [Tooltip("Seconds of continuous movement before auto-sprint kicks in.")]

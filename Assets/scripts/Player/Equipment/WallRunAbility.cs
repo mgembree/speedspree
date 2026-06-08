@@ -24,6 +24,10 @@ public class WallRunAbility : MonoBehaviour
     [SerializeField] float wallHugForce     = 20f;
     [Tooltip("Horizontal speed cap while wall running.")]
     [SerializeField] float wallRunSpeedCap  = 30f;
+    [Tooltip("Target horizontal speed while running along the wall.")]
+    [SerializeField] float wallRunTargetSpeed = 18f;
+    [Tooltip("How quickly wall-run horizontal velocity converges to target direction.")]
+    [SerializeField] float wallRunAcceleration = 60f;
 
     [Header("Wall Jump")]
     [SerializeField] float wallJumpSide    = 9f;
@@ -110,6 +114,22 @@ public class WallRunAbility : MonoBehaviour
 
         physics.GravityScale = wallGravityScale;
         physics.AddForce(-wallNormal * wallHugForce);
+
+        Vector3 desiredDir = GetWallRunDirection();
+
+        // Remove into-wall horizontal velocity so the player glides along the wall
+        // instead of getting pinned into collision.
+        Vector3 horizontal = new Vector3(physics.Velocity.x, 0f, physics.Velocity.z);
+        float intoWall = Vector3.Dot(horizontal, wallNormal);
+        if (intoWall < 0f)
+            horizontal -= wallNormal * intoWall;
+
+        float inputScale = Mathf.Clamp01(movement.MoveInput.y + 0.2f);
+        float targetSpeed = wallRunTargetSpeed * Mathf.Max(0.35f, inputScale);
+        Vector3 targetHorizontal = desiredDir * targetSpeed;
+
+        Vector3 newHorizontal = Vector3.MoveTowards(horizontal, targetHorizontal, wallRunAcceleration * Time.fixedDeltaTime);
+        physics.SetHorizontalVelocity(newHorizontal);
     }
 
     // ── Wall Detection ─────────────────────────────────────────────────────
@@ -187,6 +207,30 @@ public class WallRunAbility : MonoBehaviour
 
         EndWallRun();
         Debug.Log("[WallRun] Wall jump!");
+    }
+
+    Vector3 GetWallRunDirection()
+    {
+        Camera cam = Camera.main;
+        Vector3 camForward = cam != null ? cam.transform.forward : transform.forward;
+
+        // Primary run direction: camera forward projected onto wall plane.
+        Vector3 wallForward = Vector3.ProjectOnPlane(camForward, wallNormal);
+        wallForward = Vector3.ProjectOnPlane(wallForward, Vector3.up);
+
+        if (wallForward.sqrMagnitude < 0.001f)
+            wallForward = Vector3.Cross(Vector3.up, wallNormal);
+
+        wallForward.Normalize();
+
+        // Optional side strafe while on wall.
+        Vector3 wallRight = Vector3.Cross(Vector3.up, wallNormal).normalized;
+        Vector3 desired = wallForward * Mathf.Clamp01(movement.MoveInput.y + 0.2f) + wallRight * movement.MoveInput.x * 0.5f;
+
+        if (desired.sqrMagnitude < 0.001f)
+            desired = wallForward;
+
+        return desired.normalized;
     }
 
     // ── Public Getters ─────────────────────────────────────────────────────

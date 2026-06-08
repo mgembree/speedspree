@@ -18,12 +18,16 @@ public class GrappleAbility : MonoBehaviour
     [SerializeField] float swingSpring    = 80f;
     [SerializeField] float swingDamper    = 2f;
     [SerializeField] float swingMassScale = 4.5f;
-    [Tooltip("Continuous force toward the anchor while swinging — boosts swing speed like Spider-Man.")]
-    [SerializeField] float swingPullForce = 30f;
+
+    [Header("Pull")]
+    [Tooltip("Peak continuous force toward the anchor. Ramps up from zero using a quadratic curve.")]
+    [SerializeField] float pullMaxForce  = 85f;
+    [Tooltip("Seconds to ramp from zero pull to full pull force.")]
+    [SerializeField] float pullRampTime  = 0.45f;
 
     [Header("Momentum")]
     [Tooltip("Speed cap while grappling — lets swing momentum exceed normal movement cap.")]
-    [SerializeField] float swingSpeedCap  = 40f;
+    [SerializeField] float swingSpeedCap  = 55f;
     [Tooltip("Velocity multiplier applied on detach. 1 = no boost, 1.4 = 40% exit speed bonus.")]
     [SerializeField] float releaseBoost   = 1.35f;
 
@@ -44,6 +48,7 @@ public class GrappleAbility : MonoBehaviour
 
     Vector3     anchorPoint;
     float       cooldownTimer;
+    float       pullTimer;
     SpringJoint swingJoint;
 
     void Awake()
@@ -94,9 +99,14 @@ public class GrappleAbility : MonoBehaviour
         if (dist < swingJoint.maxDistance)
             swingJoint.maxDistance = dist;
 
-        // Only assist when rope is taut — pulling toward anchor while slack fights the arc
+        // Quadratic ramp: starts near zero, accelerates quickly to full pull force
+        pullTimer += Time.fixedDeltaTime;
+        float t = Mathf.Clamp01(pullTimer / pullRampTime);
+        float currentPullForce = pullMaxForce * (t * t);
+
+        // Only pull when rope is taut — slack means we're already inside arc
         if (dist >= swingJoint.maxDistance * 0.95f)
-            physics.AddForce(toAnchor.normalized * swingPullForce);
+            physics.AddForce(toAnchor.normalized * currentPullForce);
     }
 
     void TryFire()
@@ -135,6 +145,7 @@ public class GrappleAbility : MonoBehaviour
 
         physics.SetMaxHorizontalSpeedOverride(swingSpeedCap);
 
+        pullTimer = 0f;
         onGrappleAttach?.Invoke(anchorPoint);
         Debug.Log($"[Grapple] Rope attached | ropeLen={dist:F1}");
     }

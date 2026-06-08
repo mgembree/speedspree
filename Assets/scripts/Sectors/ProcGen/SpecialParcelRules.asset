@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e50fd802938afab4cb3c26a1b15b4469, type: 3}
+  m_Name: SpecialParcelRules
+  m_EditorClassIdentifier: Assembly-CSharp::SpecialParcelRules
+  shopParcelSize: {x: 16, y: 16}
+  shopNearCenterBias: 0.65
+  shopClearRadius: 10
+  arenaSize: {x: 34, y: 34}
+  arenaClearRadius: 22
+  arenaNearCenterBias: 0.85

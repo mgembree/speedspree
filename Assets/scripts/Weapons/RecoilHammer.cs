@@ -24,6 +24,10 @@ public class RecoilHammer : WeaponBase
     [Tooltip("Impulse applied to hit Rigidbodies in the swing direction.")]
     [SerializeField] float objectKnockback = 18f;
 
+    [Header("Ball & Chain Interaction")]
+    [Tooltip("When Ball and Chain is active, the ball gets blasted in the recoil direction. Chain then drags the player. Multiplier scales the impulse against ball mass.")]
+    [SerializeField] float ballLaunchMultiplier = 4f;
+
     [Header("Swing Animation")]
     [SerializeField] Vector3 swingOffset       = new Vector3(110f, 0f, 0f);
     [SerializeField] float   swingOutDuration  = 0.15f;
@@ -99,6 +103,17 @@ public class RecoilHammer : WeaponBase
         if (dir.sqrMagnitude < 0.001f) dir = -transform.forward; // edge case: aiming straight up
 
         physics.AddImpulse(dir.normalized * recoilForce + Vector3.up * recoilUpward);
+
+        // If ball & chain is active, blast the ball in the recoil direction.
+        // The chain going taut drags the player further than the normal recoil alone.
+        var ballChain = GetComponentInParent<BallAndChainAbility>();
+        if (ballChain != null && ballChain.IsActive && ballChain.BallObject != null)
+        {
+            var ballRb = ballChain.BallObject.GetComponent<Rigidbody>();
+            if (ballRb != null)
+                ballRb.AddForce(dir.normalized * (recoilForce * ballLaunchMultiplier), ForceMode.Impulse);
+        }
+
         Debug.Log($"[Hammer] Recoil | dir={dir.normalized:F2}");
     }
 
